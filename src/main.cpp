@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <kTasks.h>
 
 const char* ssid = "thepenthouse";
 const char* password =  "faradaythecatL0(";
@@ -8,17 +9,49 @@ const char* password =  "faradaythecatL0(";
 const char* mqttServer = "broker.hivemq.com";
 const int mqttPort = 1883;
 
+bool reconnecting = false;
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+// Task function prototypes
+void task_mqtt_loop(struct LoopTimer* t);
+
+// Table of tasks
+LoopTimer_t customtasktbl[] = {
+		{0, 300, 0, task_mqtt_loop}
+};
+
 // Function prototypes
 void callback(char* topic, byte* payload, unsigned int length);
+
+void task_mqtt_loop(struct LoopTimer* t){
+    if(!reconnecting){
+        client.loop();
+        if (!client.connected()){
+            reconnecting = true;
+            Serial.println("Reconnecting...");
+            if (client.connect("ESP8266Client")) {
+                // Once connected, publish an announcement...
+                client.publish("esp/test", "Hello from ESP8266");
+                Serial.print("Subscribe:");
+                Serial.println(client.subscribe("esp/test"));
+            }
+            Serial.print("Connected:");
+            Serial.println(client.connected());
+            reconnecting = false;
+        }
+    }
+}
+
  
 void setup() {
  
   Serial.begin(9600);
-  delay(1000);
-  Serial.println("Test!");
+  delay(500);
+
+  
+    tasks_register(customtasktbl);
  
   WiFi.begin(ssid, password);
  
@@ -48,17 +81,18 @@ void setup() {
   }
  
   client.publish("esp/test", "Hello from ESP8266");
-  client.subscribe("esp/test");
+  Serial.print("Subscribe:");
+  Serial.println(client.subscribe("esp/test"));
  
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char* topic, byte* payload, uint32_t length) {
  
   Serial.print("Message arrived in topic: ");
   Serial.println(topic);
  
   Serial.print("Message:");
-  for (int i = 0; i < length; i++) {
+  for (uint32_t i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
  
@@ -68,5 +102,5 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void loop() {
-    client.loop();
+	tasks_update();
 }
