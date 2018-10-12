@@ -7,8 +7,6 @@ const char* password =  "faradaythecatL0(";
 
 const char* mqttServer = "broker.hivemq.com";
 const int mqttPort = 1883;
-const char* mqttUser = "YourMqttUser";
-const char* mqttPassword = "YourMqttUserPassword";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -18,7 +16,9 @@ void callback(char* topic, byte* payload, unsigned int length);
  
 void setup() {
  
-  Serial.begin(115200);
+  Serial.begin(9600);
+  delay(1000);
+  Serial.println("Test!");
  
   WiFi.begin(ssid, password);
  
@@ -34,7 +34,7 @@ void setup() {
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
  
-    if (client.connect("ESP8266Client", mqttUser, mqttPassword )) {
+    if (client.connect("ESP8266Client")) {
  
       Serial.println("connected");  
  
@@ -68,5 +68,5 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void loop() {
-  client.loop();
+    client.loop();
 }
