@@ -22,6 +22,17 @@ LoopTimer_t customtasktbl[] = {
 		{0, 300, 0, task_mqtt_loop}
 };
 
+
+
+//
+//
+// TODO: Test with Adafruit MQTT Library
+//
+//
+
+
+
+
 // Function prototypes
 void callback(char* topic, byte* payload, unsigned int length);
 
