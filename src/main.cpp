@@ -1,10 +1,11 @@
 #include <ESP8266WiFi.h>
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
+#include "credentials.h"
 
 // WiFi setup
-#define WLAN_SSID   "thepenthouse"
-#define WLAN_PASS   "faradaythecatL0("
+// #define WLAN_SSID  defined-in-credentials.h
+// #define WLAN_PASS  defined-in-credentials.h
 
 // MQTT setup
 #define MQTT_SERVER "broker.hivemq.com"
