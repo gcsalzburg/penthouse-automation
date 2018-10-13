@@ -31,6 +31,8 @@ Adafruit_MQTT_Subscribe feed_led = Adafruit_MQTT_Subscribe(&mqtt, FEED_LED);
 
 // Function prototypes
 void MQTT_check_connect(void);
+void feed_blinds_callback(char *data, uint16_t len);
+void feed_led_callback(double x);
 
 void setup() {
   Serial.begin(115200);
@@ -53,7 +55,11 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
 
-  // Setup MQTT subscriptions.
+  // Set callbacks for subscriptions
+  feed_blinds.setCallback(feed_blinds_callback);
+  feed_led.setCallback(feed_led_callback);
+
+  // Begin MQTT subscriptions.
   mqtt.subscribe(&feed_blinds);
   mqtt.subscribe(&feed_led);
 }
@@ -68,30 +74,16 @@ void loop() {
   // Do stuff here
   //
 
-  // Read in subscribed topics
-  Adafruit_MQTT_Subscribe *subscription;
-  while ((subscription = mqtt.readSubscription(5000))) {
-    if (subscription == &feed_blinds) {
-      Serial.print(F("Got: "));
-      Serial.println((char *)feed_blinds.lastread);
-    }else if(subscription == &feed_led) {
-      Serial.print(F("Got: "));
-      Serial.println((char *)feed_led.lastread);
-      if ((char *)feed_led.lastread == "1"){
-        digitalWrite(STATUS_LED,LOW);
-      }else if ((char *)feed_led.lastread == "0"){
-        digitalWrite(STATUS_LED,HIGH);
-      }
-    }
-  }
+  // Fetch subscriptions
+  mqtt.processPackets(5000);
 
   // Publish to subscribed topics
   Serial.print(F("\nSending temperature: "));
   Serial.print(x);
   if (! feed_temp.publish(x++)) {
-    Serial.println(F("Failed"));
+    Serial.println(F(" | Failed"));
   } else {
-    Serial.println(F("OK!"));
+    Serial.println(F(" | OK!"));
   }
 }
 
@@ -120,4 +112,20 @@ void MQTT_check_connect() {
        }
   }
   Serial.println(F("MQTT Connected!"));
+}
+
+// Callbacks for subscriptions
+void feed_led_callback(double x) {
+  if(x >= 1){
+    digitalWrite(STATUS_LED,LOW);
+  }else if(x == 0){
+    digitalWrite(STATUS_LED,HIGH);
+  }
+  Serial.print("LED value received: ");
+  Serial.println(x);
+}
+
+void feed_blinds_callback(char *data, uint16_t len) {
+  Serial.print("Blinds command received: ");
+  Serial.println(data);
 }
