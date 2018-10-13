@@ -3,9 +3,7 @@
 #include "Adafruit_MQTT_Client.h"
 #include "credentials.h"
 
-// WiFi setup
-// #define WLAN_SSID  defined-in-credentials.h
-// #define WLAN_PASS  defined-in-credentials.h
+// See credentials.h for WIFI passwords, etc
 
 // MQTT setup
 #define MQTT_SERVER "broker.hivemq.com"
