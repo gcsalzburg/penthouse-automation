@@ -32,11 +32,13 @@ Adafruit_MQTT_Subscribe feed_led = Adafruit_MQTT_Subscribe(&mqtt, FEED_LED);
 // Function prototypes
 void MQTT_check_connect(void);
 void feed_blinds_callback(char *data, uint16_t len);
-void feed_led_callback(double x);
+void feed_led_callback(double val);
 
 void setup() {
   Serial.begin(115200);
   delay(150);
+
+  pinMode(STATUS_LED, OUTPUT); 
 
   Serial.println(); Serial.println();
   Serial.println(F("Penthouse Automation :-)"));
@@ -115,14 +117,16 @@ void MQTT_check_connect() {
 }
 
 // Callbacks for subscriptions
-void feed_led_callback(double x) {
-  if(x >= 1){
+void feed_led_callback(double val) {
+  Serial.print("LED value received: ");
+  Serial.print(val);
+  if(val >= 1){
+    Serial.println(" (ON)");
     digitalWrite(STATUS_LED,LOW);
-  }else if(x == 0){
+  }else if(val < 1){
+    Serial.println(" (OFF)");
     digitalWrite(STATUS_LED,HIGH);
   }
-  Serial.print("LED value received: ");
-  Serial.println(x);
 }
 
 void feed_blinds_callback(char *data, uint16_t len) {
