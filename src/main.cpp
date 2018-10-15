@@ -67,8 +67,10 @@ void setup() {
 
 uint32_t x=0;
 
+int outputpin= A0;
+
 void loop() {
-  // Check if connected, if not: connect!
+ /* // Check if connected, if not: connect!
   MQTT_check_connect();
 
   //
@@ -85,7 +87,15 @@ void loop() {
     Serial.println(F(" | Failed"));
   } else {
     Serial.println(F(" | OK!"));
-  }
+  }*/
+
+  int analogValue = analogRead(outputpin);
+  float millivolts = (analogValue/1024.0) * 3300; //3300 is the voltage provided by NodeMCU
+  float celsius = millivolts/10;
+  Serial.print("in DegreeC=   ");
+  Serial.println(celsius);
+  delay(500);
+
 }
 
 // Connect / reconnect to the MQTT server.
