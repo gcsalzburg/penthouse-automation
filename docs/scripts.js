@@ -1,5 +1,5 @@
 // Create a client instance
-client = new Paho.MQTT.Client("test.mosquitto.org", 8081,"/", "gcsalzburg"+new Date().getTime());
+client = new Paho.MQTT.Client("iot.eclipse.org", 443,"/ws", "gcsalzburg"+new Date().getTime());
 
 // set callback handlers
 client.onConnectionLost = onConnectionLost;
