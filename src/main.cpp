@@ -6,7 +6,7 @@
 // See credentials.h for WIFI passwords, etc
 
 // MQTT setup
-#define MQTT_SERVER "broker.hivemq.com"
+#define MQTT_SERVER "test.mosquitto.org"
 #define MQTT_PORT   1883 // use 8883 for SSL
 
 // Feed names

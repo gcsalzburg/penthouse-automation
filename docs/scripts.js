@@ -1,5 +1,5 @@
 // Create a client instance
-client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "gcsalzburg"+new Date().getTime());
+client = new Paho.MQTT.Client("test.mosquitto.org", 8081,"/", "gcsalzburg"+new Date().getTime());
 
 // set callback handlers
 client.onConnectionLost = onConnectionLost;
@@ -7,7 +7,10 @@ client.onMessageArrived = onMessageArrived;
 
 // connect the client
 document.getElementById("status").innerHTML = "Connecting...";
-client.connect({onSuccess:onConnect});
+client.connect({
+    onSuccess:onConnect,
+    useSSL:true
+});
 
 // called when the client connects
 function onConnect() {
