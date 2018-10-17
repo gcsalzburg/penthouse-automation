@@ -3,14 +3,17 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width,initial-scale=1">
-		<title>Penthouse Automation</title>
-		<link rel="stylesheet" href="style.css">
-		<script src="script.js"></script>
+        <title>Penthouse Automation</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+        <link href="https://fonts.googleapis.com/css?family=Dosis:300,400,600,700" rel="stylesheet">
+        <link rel="stylesheet" href="styles.css">
 	</head>
 	<body>
-        <!-- page content -->
-        <div id="temperature"></div>
-			
+        <main>
+            <span id="temp" class="temp"></span>
+            <div id="status" class="status">Loading...</div>
+        </main>
+        <script src="scripts.js"></script>
 	</body>
 
 </html>
