@@ -30,4 +30,5 @@ function onConnectionLost(responseObject) {
 // called when a message arrives
 function onMessageArrived(message) {
     document.querySelector('#temp').innerHTML = message.payloadString+"°";
+    document.getElementById("status").innerHTML = "Temp received!";
 }
