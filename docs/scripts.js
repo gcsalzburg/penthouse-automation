@@ -12,6 +12,45 @@ client.connect({
     useSSL:true
 });
 
+//buttons
+document.getElementById("south_down").onclick  = function(e){
+    sendBlind(1);
+    return false;
+};
+document.getElementById("south_up").onclick  = function(e){
+    sendBlind(2);
+    return false;
+};
+document.getElementById("north_down").onclick  = function(e){
+    sendBlind(3);
+    return false;
+};
+document.getElementById("north_up").onclick  = function(e){
+    sendBlind(4);
+    return false;
+};
+document.getElementById("all_down").onclick  = function(e){
+    sendBlind(6);
+    return false;
+};
+document.getElementById("all_up").onclick  = function(e){
+    sendBlind(7);
+    return false;
+};
+document.getElementById("off").onclick  = function(e){
+    sendBlind(5);
+    return false;
+};
+
+function sendBlind(num){
+    var message = new Paho.MQTT.Message(num+"");
+    message.destinationName = "gcsalzburg/blinds";
+    message.qos = 0;
+    console.log(message);
+    
+    client.send(message);
+}
+
 // called when the client connects
 function onConnect() {
   // Once a connection has been made, make a subscription and send a message.

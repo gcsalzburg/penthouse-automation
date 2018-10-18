@@ -28,3 +28,23 @@ main{
     font-size:2.5em;
     color: #fff;
 }
+
+.butts a{
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: rgba(255,255,255,0.3);
+    color: #fff;
+    font-family: 'Dosis', sans-serif;
+    font-weight: 800;
+    text-decoration: none;
+    text-transform: uppercase;
+    margin: 20px 5px 0;
+    border-radius: 30px;
+}
+.butts a:hover{
+    background-color: rgba(255,255,255,0.5);
+}
+.butts a:active{
+    background-color: rgba(0,0,0,0.8);
+    color:#FFF;
+}
