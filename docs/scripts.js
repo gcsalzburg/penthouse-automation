@@ -30,15 +30,15 @@ document.getElementById("north_up").onclick  = function(e){
     return false;
 };
 document.getElementById("all_down").onclick  = function(e){
-    sendBlind(6);
+    sendBlind(5);
     return false;
 };
 document.getElementById("all_up").onclick  = function(e){
-    sendBlind(7);
+    sendBlind(6);
     return false;
 };
-document.getElementById("off").onclick  = function(e){
-    sendBlind(5);
+document.getElementById("stop").onclick  = function(e){
+    sendBlind(0);
     return false;
 };
 
