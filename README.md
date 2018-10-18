@@ -1,5 +1,10 @@
 # Penthouse Automation #
 
+IoT Automation for blinds
+
+Uses `PlatformIO` VSCode integration.
+Code written for `Sparkfun Pro Micro 5V/16Hz`
+
 ## Keep MQTT alive ##
 
 ```
