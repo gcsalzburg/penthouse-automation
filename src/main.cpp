@@ -42,14 +42,15 @@ enum BlindDirection{
 
 typedef struct{
   char            *blind_name;
-	BlindDirection  direction;
+	BlindDirection  dir;
+	BlindDirection  last_dir;
 	uint32_t        last_trigger;
 	uint8_t	        up_pin;
 	uint8_t         down_pin;
 }BlindState_t;
 
-BlindState_t north = {"north", NONE, 0, RELAY_0, RELAY_1};
-BlindState_t south = {"south", NONE, 0, RELAY_2, RELAY_3};
+BlindState_t north = {"north", NONE, NONE, 0, RELAY_0, RELAY_1};
+BlindState_t south = {"south", NONE, NONE, 0, RELAY_2, RELAY_3};
 BlindState_t blinds[] = {north, south};
 
 // ESP8266 WiFiClient class
@@ -69,9 +70,9 @@ void MQTT_check_connect(void);
 void feed_blinds_callback(double val);
 void feed_led_callback(double val);
 
-void set_blind(BlindState_t *blind, BlindDirection dir);
-void stop_blind(BlindState_t *blind);
-void kill_blind(BlindState_t *blind);
+void blind_start(BlindState_t *blind, BlindDirection dir);
+void blind_release(BlindState_t *blind);
+void blind_stop(BlindState_t *blind);
 
 void cmd_blind(uint8_t argc, char *argv[]);
 void cmd_delay(uint8_t argc, char *argv[]);
@@ -79,14 +80,14 @@ void cmd_stop(uint8_t argc, char *argv[]);
 
 // Task function prototypes
 void task_send_temp(struct LoopTimer* t);
-void task_check_blind_stop(struct LoopTimer* t);
+void task_check_blind_release(struct LoopTimer* t);
 void task_fetch_packets(struct LoopTimer* t);
 void task_check_connection(struct LoopTimer* t);
 
 // Table of tasks
 LoopTimer_t customtasktbl[] = {
 		{1, 5000, 0, task_send_temp},
-    {2, 200, 0, task_check_blind_stop},
+    {2, 200, 0, task_check_blind_release},
     {3, 200, 0, task_fetch_packets},
     {4, 3000, 0, task_check_connection}
 };
@@ -171,12 +172,12 @@ void task_fetch_packets(struct LoopTimer* t){
   mqtt.processPackets(200);
 }
 
-void task_check_blind_stop(struct LoopTimer* t){
+void task_check_blind_release(struct LoopTimer* t){
   // Check if we need to cancel the blind movement
   for(uint8_t i=0; i<NUM_BLINDS; i++){
-      if(blinds[i].direction > NONE){
+      if(blinds[i].dir > NONE){
           if(millis() > blinds[i].last_trigger+BLIND_HOLD_DELAY){
-              stop_blind(&blinds[i]);
+              blind_release(&blinds[i]);
           }
       }
   }
@@ -212,69 +213,81 @@ void feed_blinds_callback(double val) {
   Serial.print("Blind value received: ");
   Serial.println(val);
   if(val == 0){
-    kill_blind(&blinds[0]);
-    kill_blind(&blinds[1]);
+    blind_stop(&blinds[0]);
+    blind_stop(&blinds[1]);
   }else if(val == 1){
-    set_blind(&blinds[0],DOWN);
+    blind_start(&blinds[0],DOWN);
   }else if(val == 2){
-    set_blind(&blinds[0],UP);
+    blind_start(&blinds[0],UP);
   }else if(val == 3){
-    set_blind(&blinds[1],DOWN);
+    blind_start(&blinds[1],DOWN);
   }else if(val == 4){
-    set_blind(&blinds[1],UP);
+    blind_start(&blinds[1],UP);
   }else if(val == 5){
-    set_blind(&blinds[0],DOWN);
-    set_blind(&blinds[1],DOWN);
+    blind_start(&blinds[0],DOWN);
+    blind_start(&blinds[1],DOWN);
   }else if(val == 6){
-    set_blind(&blinds[0],UP);
-    set_blind(&blinds[1],UP);
+    blind_start(&blinds[0],UP);
+    blind_start(&blinds[1],UP);
   }
 }
 
 
 // Set the movement of a blind
-void set_blind(BlindState_t *blind, BlindDirection dir){
-    if(dir == NONE){
-        digitalWrite(blind->up_pin,HIGH);
-        digitalWrite(blind->down_pin,HIGH);
-
-        Serial.print("Stopped ");
-        Serial.print(blind->blind_name);
-        Serial.println(" blind");
-
+void blind_start(BlindState_t *blind, BlindDirection dir){
+    if((dir == UP) || (dir == DOWN)){   
+      Serial.print("Moving ");
+      Serial.print(blind->blind_name);
+      Serial.print(" blind ");
+      if(dir == UP){
+          digitalWrite(blind->up_pin,LOW);
+          digitalWrite(blind->down_pin,HIGH);
+          Serial.println("up");
+      }else if(dir == DOWN){
+          digitalWrite(blind->up_pin,HIGH);
+          digitalWrite(blind->down_pin,LOW);
+          Serial.println("down");
+      }
+      blind->dir = dir;
+      blind->last_dir = dir;
+      blind->last_trigger = millis();
     }else{
-   
-        Serial.print("Moving ");
-        Serial.print(blind->blind_name);
-        Serial.print(" blind ");
-        if(dir == UP){
-            digitalWrite(blind->up_pin,LOW);
-            digitalWrite(blind->down_pin,HIGH);
-            Serial.println("up");
-        }else if(dir == DOWN){
-            digitalWrite(blind->up_pin,HIGH);
-            digitalWrite(blind->down_pin,LOW);
-            Serial.println("down");
-        }
+      Serial.println("[No change to blinds]");
     } 
-    blind->direction = dir;
-    blind->last_trigger = millis();
 }
 
 // Stop a blind moving
-void stop_blind(BlindState_t *blind){
-    set_blind(blind, NONE);
+void blind_release(BlindState_t *blind){  
+  Serial.print("Released ");
+  Serial.print(blind->blind_name);
+  Serial.println(" blind switch");
+
+  digitalWrite(blind->up_pin,HIGH);
+  digitalWrite(blind->down_pin,HIGH);
+  blind->dir = NONE;
 }
 
 // Kill blind movement with short tap in other direction
-void kill_blind(BlindState_t *blind){
-  if(blind->direction == DOWN){
-    digitalWrite(blind->up_pin,LOW);
-    delay(BLIND_KILL_DELAY);
-    digitalWrite(blind->up_pin,HIGH);
-  }else if(blind->direction == UP){
-    digitalWrite(blind->down_pin,LOW);
-    delay(BLIND_KILL_DELAY);
-    digitalWrite(blind->down_pin,HIGH);
+void blind_stop(BlindState_t *blind){
+  if((blind->last_dir == UP) || (blind->last_dir == DOWN)){   
+    if(blind->last_dir == DOWN){
+      digitalWrite(blind->down_pin,HIGH);
+      digitalWrite(blind->up_pin,LOW);
+      delay(BLIND_KILL_DELAY);
+      digitalWrite(blind->up_pin,HIGH);
+    }else if(blind->last_dir == UP){
+      digitalWrite(blind->up_pin,HIGH);
+      digitalWrite(blind->down_pin,LOW);
+      delay(BLIND_KILL_DELAY);
+      digitalWrite(blind->down_pin,HIGH);
+    }
+
+    Serial.print("Stopped ");
+    Serial.print(blind->blind_name);
+    Serial.println(" blind moving");
+    
+    blind->dir = NONE;
+    blind->last_dir = NONE;
+
   }
 }
