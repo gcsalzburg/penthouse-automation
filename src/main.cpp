@@ -1,9 +1,14 @@
 #include <ESP8266WiFi.h>
-#include "Adafruit_MQTT.h"
-#include "Adafruit_MQTT_Client.h"
-#include "credentials.h"
+#include <Adafruit_MQTT.h>
+#include <Adafruit_MQTT_Client.h>
+#include <credentials.h>
+#include "kTasks.h"
 
 // See credentials.h for WIFI passwords, etc
+
+// Number of blinds
+#define NUM_BLINDS 2
+#define NUM_RELAYS NUM_BLINDS*2
 
 // MQTT setup
 #define MQTT_SERVER "iot.eclipse.org"
@@ -14,8 +19,37 @@
 #define FEED_BLINDS "gcsalzburg/blinds"
 #define FEED_LED    "gcsalzburg/led"
 
+// Relay pins
+#define RELAY_0 D1
+#define RELAY_1 D2
+#define RELAY_2 D3
+#define RELAY_3 D4
+
 // IO
 #define STATUS_LED LED_BUILTIN
+#define TEMP_PIN A0
+
+// Define structs to hold blind information
+enum BlindDirection{
+	NONE = 0,
+	UP,
+	DOWN
+};
+
+typedef struct{
+  char            *blind_name;
+	BlindDirection  direction;
+	uint32_t        last_trigger;
+	uint8_t	        up_pin;
+	uint8_t         down_pin;
+}BlindState_t;
+
+BlindState_t north = {"north", NONE, 0, RELAY_0, RELAY_1};
+BlindState_t south = {"south", NONE, 0, RELAY_2, RELAY_3};
+BlindState_t blinds[] = {north, south};
+
+// Default hold delay on up/down trigger
+uint16_t hold_delay = 1500;
 
 // ESP8266 WiFiClient class
 WiFiClient client;
@@ -30,14 +64,47 @@ Adafruit_MQTT_Subscribe feed_led = Adafruit_MQTT_Subscribe(&mqtt, FEED_LED);
 
 // Function prototypes
 void MQTT_check_connect(void);
-void feed_blinds_callback(char *data, uint16_t len);
+//void feed_blinds_callback(char *data, uint16_t len);
+void feed_blinds_callback(double val);
 void feed_led_callback(double val);
+
+void set_blind(BlindState_t *blind, BlindDirection dir);
+void stop_blind(BlindState_t *blind);
+
+void cmd_blind(uint8_t argc, char *argv[]);
+void cmd_delay(uint8_t argc, char *argv[]);
+void cmd_stop(uint8_t argc, char *argv[]);
+
+// Task function prototypes
+void task_send_temp(struct LoopTimer* t);
+void task_check_blind_stop(struct LoopTimer* t);
+void task_fetch_packets(struct LoopTimer* t);
+void task_check_connection(struct LoopTimer* t);
+
+// Table of tasks
+LoopTimer_t customtasktbl[] = {
+		{1, 5000, 0, task_send_temp},
+    {2, 200, 0, task_check_blind_stop},
+    {3, 200, 0, task_fetch_packets},
+    {4, 3000, 0, task_check_connection}
+};
+
 
 void setup() {
   Serial.begin(115200);
   delay(150);
 
+	tasks_register(customtasktbl);
+
   pinMode(STATUS_LED, OUTPUT); 
+
+  // Turn off all blinds
+  for(uint8_t i=0; i<NUM_BLINDS; i++){
+    pinMode(blinds[i].up_pin,OUTPUT);
+    pinMode(blinds[i].down_pin,OUTPUT);
+    digitalWrite(blinds[i].up_pin,HIGH);
+    digitalWrite(blinds[i].down_pin,HIGH);
+  }
 
   Serial.println(); Serial.println();
   Serial.println(F("Penthouse Automation :-)"));
@@ -65,37 +132,13 @@ void setup() {
   mqtt.subscribe(&feed_led);
 }
 
-uint32_t x=0;
-
-int outputpin= A0;
-
 void loop() {
-  // Check if connected, if not: connect!
-  MQTT_check_connect();
-
-  //
-  // Do stuff here
-  //
-
-  // Fetch subscriptions
-  mqtt.processPackets(2000);
-
-  // Publish to subscribed topics
-  int analogValue = analogRead(outputpin);
-  float millivolts = (analogValue/1024.0) * 3300; //3300 is the voltage provided by NodeMCU
-  float celsius = millivolts/10;
-  Serial.print(celsius);
-  Serial.print("°");
-  if(!feed_temp.publish(celsius)) {
-    Serial.println(F(" | Err"));
-  } else {
-    Serial.println(F(" | Sent!"));
-  }
-
+	// Call task updater
+	tasks_update();
 }
 
 // Connect / reconnect to the MQTT server.
-void MQTT_check_connect() {
+void task_check_connection(struct LoopTimer* t) {
   int8_t ret;
 
   // Stop if already connected.
@@ -121,6 +164,35 @@ void MQTT_check_connect() {
   Serial.println(F("MQTT Connected!"));
 }
 
+void task_fetch_packets(struct LoopTimer* t){
+  // Fetch subscriptions
+  mqtt.processPackets(200);
+}
+
+void task_check_blind_stop(struct LoopTimer* t){
+  // Check if we need to cancel the blind movement
+  for(uint8_t i=0; i<NUM_BLINDS; i++){
+      if(blinds[i].direction > NONE){
+          if(millis() > blinds[i].last_trigger+hold_delay){
+              stop_blind(&blinds[i]);
+          }
+      }
+  }
+}
+
+void task_send_temp(struct LoopTimer* t){
+  int analogValue = analogRead(TEMP_PIN);
+  float millivolts = (analogValue/1024.0) * 3300; //3300 is the voltage provided by NodeMCU
+  float celsius = millivolts/10;
+  Serial.print(celsius);
+  Serial.print("°");
+  if(!feed_temp.publish(celsius)) {
+    Serial.println(F(" | Err"));
+  } else {
+    Serial.println(F(" | Sent!"));
+  }
+}
+
 // Callbacks for subscriptions
 void feed_led_callback(double val) {
   Serial.print("LED value received: ");
@@ -134,7 +206,99 @@ void feed_led_callback(double val) {
   }
 }
 
-void feed_blinds_callback(char *data, uint16_t len) {
-  Serial.print("Blinds command received: ");
-  Serial.println(data);
+void feed_blinds_callback(double val) {
+  Serial.print("Blind value received: ");
+  Serial.println(val);
+  if(val == 0){
+    stop_blind(&blinds[0]);
+    stop_blind(&blinds[1]);
+  }else if(val == 1){
+    set_blind(&blinds[0],DOWN);
+  }else if(val == 2){
+    set_blind(&blinds[0],UP);
+  }else if(val == 3){
+    set_blind(&blinds[1],DOWN);
+  }else if(val == 4){
+    set_blind(&blinds[1],UP);
+  }else if(val == 5){
+    stop_blind(&blinds[0]);
+    stop_blind(&blinds[1]);
+  }else if(val == 6){
+    set_blind(&blinds[0],DOWN);
+    set_blind(&blinds[1],DOWN);
+  }else if(val == 7){
+    set_blind(&blinds[0],UP);
+    set_blind(&blinds[1],UP);
+  }
 }
+
+
+// Set the movement of a blind
+void set_blind(BlindState_t *blind, BlindDirection dir){
+    if(dir == NONE){
+        digitalWrite(blind->up_pin,HIGH);
+        digitalWrite(blind->down_pin,HIGH);
+
+        Serial.print("Stopped ");
+        Serial.print(blind->blind_name);
+        Serial.println(" blind");
+
+    }else{
+            
+        Serial.print("Moving ");
+        Serial.print(blind->blind_name);
+        Serial.print(" blind ");
+        if(dir == UP){
+            digitalWrite(blind->up_pin,LOW);
+            digitalWrite(blind->down_pin,HIGH);
+            Serial.println("up");
+        }else if(dir == DOWN){
+            digitalWrite(blind->up_pin,HIGH);
+            digitalWrite(blind->down_pin,LOW);
+            Serial.println("down");
+        }
+    } 
+    blind->direction = dir;
+    blind->last_trigger = millis();
+}
+
+// Stop a blind moving
+void stop_blind(BlindState_t *blind){
+    set_blind(blind, NONE);
+}
+
+/*
+// Move a blind
+// >blind a b 
+//    a = blind number to move
+//    b = direction to move blind
+void cmd_blind(uint8_t argc, char *argv[]){
+	if(argc == 3){
+        uint8_t blind_num = atoi(argv[1]);
+        BlindDirection dir = static_cast<BlindDirection>(atoi(argv[2]));
+
+        if( (dir <= DOWN) && (blind_num < NUM_BLINDS) ){
+            set_blind(&blinds[blind_num],dir);
+        }
+    }
+}
+*/
+
+
+/*
+// Stop blind moving
+// >stop a
+//   a = [opt] blind to stop. Without this, all blinds will stop
+void cmd_stop(uint8_t argc, char *argv[]){
+	if(argc == 2){
+        uint8_t blind_num = atoi(argv[1]);
+
+        if(blind_num < NUM_BLINDS){
+            stop_blind(&blinds[blind_num]);
+        }
+    }else{
+        for(uint8_t i=0; i<NUM_BLINDS; i++){
+            stop_blind(&blinds[i]);
+        }
+    }
+}*/
