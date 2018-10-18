@@ -29,6 +29,10 @@
 #define STATUS_LED LED_BUILTIN
 #define TEMP_PIN A0
 
+// Default hold delay on up/down trigger
+#define BLIND_HOLD_DELAY 1500
+#define BLIND_KILL_DELAY 250
+
 // Define structs to hold blind information
 enum BlindDirection{
 	NONE = 0,
@@ -47,9 +51,6 @@ typedef struct{
 BlindState_t north = {"north", NONE, 0, RELAY_0, RELAY_1};
 BlindState_t south = {"south", NONE, 0, RELAY_2, RELAY_3};
 BlindState_t blinds[] = {north, south};
-
-// Default hold delay on up/down trigger
-uint16_t hold_delay = 1500;
 
 // ESP8266 WiFiClient class
 WiFiClient client;
@@ -70,6 +71,7 @@ void feed_led_callback(double val);
 
 void set_blind(BlindState_t *blind, BlindDirection dir);
 void stop_blind(BlindState_t *blind);
+void kill_blind(BlindState_t *blind);
 
 void cmd_blind(uint8_t argc, char *argv[]);
 void cmd_delay(uint8_t argc, char *argv[]);
@@ -173,7 +175,7 @@ void task_check_blind_stop(struct LoopTimer* t){
   // Check if we need to cancel the blind movement
   for(uint8_t i=0; i<NUM_BLINDS; i++){
       if(blinds[i].direction > NONE){
-          if(millis() > blinds[i].last_trigger+hold_delay){
+          if(millis() > blinds[i].last_trigger+BLIND_HOLD_DELAY){
               stop_blind(&blinds[i]);
           }
       }
@@ -210,8 +212,8 @@ void feed_blinds_callback(double val) {
   Serial.print("Blind value received: ");
   Serial.println(val);
   if(val == 0){
-    stop_blind(&blinds[0]);
-    stop_blind(&blinds[1]);
+    kill_blind(&blinds[0]);
+    kill_blind(&blinds[1]);
   }else if(val == 1){
     set_blind(&blinds[0],DOWN);
   }else if(val == 2){
@@ -221,12 +223,9 @@ void feed_blinds_callback(double val) {
   }else if(val == 4){
     set_blind(&blinds[1],UP);
   }else if(val == 5){
-    stop_blind(&blinds[0]);
-    stop_blind(&blinds[1]);
-  }else if(val == 6){
     set_blind(&blinds[0],DOWN);
     set_blind(&blinds[1],DOWN);
-  }else if(val == 7){
+  }else if(val == 6){
     set_blind(&blinds[0],UP);
     set_blind(&blinds[1],UP);
   }
@@ -244,7 +243,7 @@ void set_blind(BlindState_t *blind, BlindDirection dir){
         Serial.println(" blind");
 
     }else{
-            
+   
         Serial.print("Moving ");
         Serial.print(blind->blind_name);
         Serial.print(" blind ");
@@ -267,38 +266,15 @@ void stop_blind(BlindState_t *blind){
     set_blind(blind, NONE);
 }
 
-/*
-// Move a blind
-// >blind a b 
-//    a = blind number to move
-//    b = direction to move blind
-void cmd_blind(uint8_t argc, char *argv[]){
-	if(argc == 3){
-        uint8_t blind_num = atoi(argv[1]);
-        BlindDirection dir = static_cast<BlindDirection>(atoi(argv[2]));
-
-        if( (dir <= DOWN) && (blind_num < NUM_BLINDS) ){
-            set_blind(&blinds[blind_num],dir);
-        }
-    }
+// Kill blind movement with short tap in other direction
+void kill_blind(BlindState_t *blind){
+  if(blind->direction == DOWN){
+    digitalWrite(blind->up_pin,LOW);
+    delay(BLIND_KILL_DELAY);
+    digitalWrite(blind->up_pin,HIGH);
+  }else if(blind->direction == UP){
+    digitalWrite(blind->down_pin,LOW);
+    delay(BLIND_KILL_DELAY);
+    digitalWrite(blind->down_pin,HIGH);
+  }
 }
-*/
-
-
-/*
-// Stop blind moving
-// >stop a
-//   a = [opt] blind to stop. Without this, all blinds will stop
-void cmd_stop(uint8_t argc, char *argv[]){
-	if(argc == 2){
-        uint8_t blind_num = atoi(argv[1]);
-
-        if(blind_num < NUM_BLINDS){
-            stop_blind(&blinds[blind_num]);
-        }
-    }else{
-        for(uint8_t i=0; i<NUM_BLINDS; i++){
-            stop_blind(&blinds[i]);
-        }
-    }
-}*/
