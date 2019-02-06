@@ -271,15 +271,15 @@ void blind_release(BlindState_t *blind){
 void blind_stop(BlindState_t *blind){
   if((blind->last_dir == UP) || (blind->last_dir == DOWN)){   
     if(blind->last_dir == DOWN){
-      digitalWrite(blind->down_pin,HIGH);
-      digitalWrite(blind->up_pin,LOW);
-      delay(BLIND_KILL_DELAY);
-      digitalWrite(blind->up_pin,HIGH);
-    }else if(blind->last_dir == UP){
       digitalWrite(blind->up_pin,HIGH);
       digitalWrite(blind->down_pin,LOW);
       delay(BLIND_KILL_DELAY);
       digitalWrite(blind->down_pin,HIGH);
+    }else if(blind->last_dir == UP){
+      digitalWrite(blind->down_pin,HIGH);
+      digitalWrite(blind->up_pin,LOW);
+      delay(BLIND_KILL_DELAY);
+      digitalWrite(blind->up_pin,HIGH);
     }
 
     Serial.print("Stopped ");
