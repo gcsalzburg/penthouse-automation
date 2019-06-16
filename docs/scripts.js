@@ -1,5 +1,5 @@
 // Create a client instance
-client = new Paho.MQTT.Client("iot.eclipse.org", 443,"/ws", "gcsalzburg"+new Date().getTime());
+client = new Paho.MQTT.Client(mqtt_host, 8083, "/penthouse", "gcsalzburg"+new Date().getTime());
 
 // set callback handlers
 client.onConnectionLost = onConnectionLost;
@@ -9,7 +9,9 @@ client.onMessageArrived = onMessageArrived;
 document.getElementById("status").innerHTML = "Connecting...";
 client.connect({
     onSuccess:onConnect,
-    useSSL:true
+    useSSL:true,
+    userName: mqtt_username,
+    password: mqtt_password
 });
 
 //buttons
@@ -55,7 +57,7 @@ function sendBlind(num){
 function onConnect() {
   // Once a connection has been made, make a subscription and send a message.
   document.getElementById("status").innerHTML = "Subscribing...";
-  client.subscribe("gcsalzburg/temp");
+  client.subscribe("temp");
 }
 
 // called when the client loses its connection
