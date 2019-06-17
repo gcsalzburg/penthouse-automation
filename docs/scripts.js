@@ -1,5 +1,5 @@
-// Create a client instance
-client = new Paho.MQTT.Client(mqtt_host, 8083, "/penthouse", "gcsalzburg"+new Date().getTime());
+// Create MQTT client instance instance
+client = new Paho.MQTT.Client(mqtt_host, 8083, "/ws", "gcsalzburg"+new Date().getTime());
 
 // set callback handlers
 client.onConnectionLost = onConnectionLost;
@@ -8,10 +8,10 @@ client.onMessageArrived = onMessageArrived;
 // connect the client
 document.getElementById("status").innerHTML = "Connecting...";
 client.connect({
-    onSuccess:onConnect,
-    useSSL:true,
-    userName: mqtt_username,
-    password: mqtt_password
+    onSuccess:  onConnect,
+    useSSL:     true,
+    userName:   mqtt_username,
+    password:   mqtt_password
 });
 
 //buttons
@@ -46,7 +46,7 @@ document.getElementById("stop").onclick  = function(e){
 
 function sendBlind(num){
     var message = new Paho.MQTT.Message(num+"");
-    message.destinationName = "gcsalzburg/blinds";
+    message.destinationName = "penthouse/blinds";
     message.qos = 0;
     console.log(message);
     
@@ -57,7 +57,7 @@ function sendBlind(num){
 function onConnect() {
   // Once a connection has been made, make a subscription and send a message.
   document.getElementById("status").innerHTML = "Subscribing...";
-  client.subscribe("temp");
+  client.subscribe("penthouse/temp");
 }
 
 // called when the client loses its connection
