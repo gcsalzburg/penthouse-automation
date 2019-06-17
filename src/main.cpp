@@ -11,13 +11,12 @@
 #define NUM_RELAYS NUM_BLINDS*2
 
 // MQTT setup
-#define MQTT_SERVER "iot.eclipse.org"
-#define MQTT_PORT   1883 // use 8883 for SSL
+#define MQTT_PORT   8883 // use 8883 for SSL
 
 // Feed names
-#define FEED_TEMP   "gcsalzburg/temp"
-#define FEED_BLINDS "gcsalzburg/blinds"
-#define FEED_LED    "gcsalzburg/led"
+#define FEED_TEMP   "penthouse/temp"
+#define FEED_BLINDS "penthouse/blinds"
+#define FEED_LED    "penthouse/led"
 
 // Relay pins
 #define RELAY_0 D1
@@ -54,10 +53,10 @@ BlindState_t south = {"south", NONE, NONE, 0, RELAY_2, RELAY_3};
 BlindState_t blinds[] = {north, south};
 
 // ESP8266 WiFiClient class
-WiFiClient client;
+WiFiClientSecure client;
 
 // MQTT client class
-Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT);
+Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
 
 // Feeds
 Adafruit_MQTT_Publish feed_temp = Adafruit_MQTT_Publish(&mqtt, FEED_TEMP);
