@@ -6,5 +6,3 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 src/credentials.h
-
-docs/credentials.js
