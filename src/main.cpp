@@ -1,10 +1,10 @@
 #include <ESP8266WiFi.h>
 #include <Adafruit_MQTT.h>
 #include <Adafruit_MQTT_Client.h>
-#include <credentials.h>
-#include "kTasks.h"
+#include <CAVE_Tasks.h>
 
 // See credentials.h for WIFI passwords, etc
+#include <credentials.h>
 
 // MQTT setup
 #define MQTT_PORT   8883 // use 8883 for SSL
@@ -29,15 +29,16 @@ Adafruit_MQTT_Publish   feed_temp = Adafruit_MQTT_Publish(&mqtt, FEED_TEMP);
 void MQTT_check_connect(void);
 
 // Task function prototypes
-void task_send_temp(struct LoopTimer* t);
-void task_fetch_packets(struct LoopTimer* t);
-void task_check_connection(struct LoopTimer* t);
+void task_send_temp();
+void task_fetch_packets();
+void task_check_connection();
 
 // Table of tasks
-LoopTimer_t customtasktbl[] = {
-   {1, 5000, 0, task_send_temp},
-   {3, 200, 0, task_fetch_packets},
-   {4, 3000, 0, task_check_connection}
+
+CAVE::Task loop_tasks[] = {
+   {task_send_temp, 5000},
+   {task_fetch_packets, 200},
+   {task_check_connection, 3000}
 };
 
 
@@ -45,7 +46,7 @@ void setup() {
   Serial.begin(115200);
   delay(150);
 
-	tasks_register(customtasktbl);
+   CAVE::tasks_register(loop_tasks);
 
   pinMode(STATUS_LED, OUTPUT); 
 
@@ -69,11 +70,11 @@ void setup() {
 
 void loop() {
 	// Call task updater
-	tasks_update();
+	CAVE::tasks_update();
 }
 
 // Connect / reconnect to the MQTT server.
-void task_check_connection(struct LoopTimer* t) {
+void task_check_connection() {
   int8_t ret;
 
   // Stop if already connected.
@@ -99,12 +100,12 @@ void task_check_connection(struct LoopTimer* t) {
   Serial.println(F("MQTT Connected!"));
 }
 
-void task_fetch_packets(struct LoopTimer* t){
+void task_fetch_packets(){
   // Fetch subscriptions
   mqtt.processPackets(200);
 }
 
-void task_send_temp(struct LoopTimer* t){
+void task_send_temp(){
   int analogValue = analogRead(TEMP_PIN);
   float millivolts = (analogValue/1024.0) * 3300; //3300 is the voltage provided by NodeMCU
   float celsius = millivolts/10;
