@@ -10,7 +10,7 @@
 #define MQTT_PORT   8883 // use 8883 for SSL
 
 // Feed names
-#define FEED_TEMP   "penthouse/temp"
+#define FEED_TEMP   "penthouse/temp2"
 
 // IO
 #define STATUS_LED LED_BUILTIN
