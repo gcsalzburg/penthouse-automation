@@ -26,7 +26,7 @@ Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT, MQTT_USERNAME, MQTT_P
 static const char *fingerprint PROGMEM = MQTT_SERVER_FINGERPRINT;
 
 // Feeds
-Adafruit_MQTT_Publish   feed_temp = Adafruit_MQTT_Publish(&mqtt, FEED_TEMP, 0, 1);
+Adafruit_MQTT_Publish feed_temp = Adafruit_MQTT_Publish(&mqtt, FEED_TEMP, 0, 1);
 
 // Function prototypes
 void MQTT_check_connect(void);
@@ -39,7 +39,6 @@ void task_check_connection();
 // Table of tasks
 CAVE::Task loop_tasks[] = {
    {task_send_temp, 5000},
-   {task_fetch_packets, 200},
    {task_check_connection, 3000}
 };
 
@@ -103,11 +102,6 @@ void task_check_connection() {
       }
    }
    Serial.println(F("MQTT Connected!"));
-}
-
-void task_fetch_packets(){
-   // Fetch subscriptions
-   mqtt.processPackets(200);
 }
 
 void task_send_temp(){
