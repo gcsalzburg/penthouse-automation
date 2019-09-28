@@ -6,11 +6,17 @@
 // See credentials.h for WIFI passwords, etc
 #include <credentials.h>
 
+// ******** SETUP FOR NODE HERE *************** //
+
+#define NODE_NAME "living-space"
+
+// ******************************************** //
+
 // MQTT setup
 #define MQTT_PORT   8883 // use 8883 for SSL
 
-// Feed names
-#define FEED_TEMP   "penthouse/temp"
+// Feed roote for penthouse
+#define FEED_TEMP   "penthouse/temp/" NODE_NAME
 
 // IO
 #define STATUS_LED LED_BUILTIN
