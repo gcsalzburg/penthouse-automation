@@ -22,6 +22,9 @@ WiFiClientSecure client;
 // MQTT client class
 Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
 
+// SHA1 fingerprint
+static const char *fingerprint PROGMEM = MQTT_SERVER_FINGERPRINT;
+
 // Feeds
 Adafruit_MQTT_Publish   feed_temp = Adafruit_MQTT_Publish(&mqtt, FEED_TEMP);
 
@@ -66,6 +69,10 @@ void setup() {
 
   Serial.println("WiFi connected");
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
+
+   
+  // check the fingerprint of server's SSL cert
+  client.setFingerprint(fingerprint);
 }
 
 void loop() {
