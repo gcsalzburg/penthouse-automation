@@ -10,7 +10,7 @@
 #define MQTT_PORT   8883 // use 8883 for SSL
 
 // Feed names
-#define FEED_TEMP   "penthouse/temp2"
+#define FEED_TEMP   "penthouse/temp"
 
 // IO
 #define STATUS_LED LED_BUILTIN
@@ -26,7 +26,7 @@ Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT, MQTT_USERNAME, MQTT_P
 static const char *fingerprint PROGMEM = MQTT_SERVER_FINGERPRINT;
 
 // Feeds
-Adafruit_MQTT_Publish   feed_temp = Adafruit_MQTT_Publish(&mqtt, FEED_TEMP);
+Adafruit_MQTT_Publish   feed_temp = Adafruit_MQTT_Publish(&mqtt, FEED_TEMP, 0, 1);
 
 // Function prototypes
 void MQTT_check_connect(void);
