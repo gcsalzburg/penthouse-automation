@@ -13,7 +13,7 @@ Code written for `ESP8266 NodeMCU ESP-12E`
 
 3. Replace the data in `cert.h` with your own certificate.
 
-   Follow these instructions to download the root certificate, saving it as `ca.cert` for your MQTT server domain name: https://docs.bvstools.com/home/ssl-documentation/exporting-certificate-authorities-cas-from-a-website
+   Follow these instructions to download the **root** certificate, saving it as `ca.cert` for your MQTT server domain name: https://docs.bvstools.com/home/ssl-documentation/exporting-certificate-authorities-cas-from-a-website
 
    On Linux run `xxd -i ca.cert ca_cert.h` to convert to the correct format. Then copy the data into `cert.h` (check that the variable names are correct).   
 
